@@ -96,7 +96,10 @@ let blockedParameter = GM_getValue("GM_blockedParameter", {
     blockedTitle_Switch: true,
     blockedTitle_UseRegular: true,
     blockedTitle_Array: [],
-
+    // 标题关键字白名单
+    whitelistTitle_Switch: true,
+    whitelistTitle_UseRegular:true,
+    whitelistTitle_Array: [],
     // 屏蔽Up主和Uid
     blockedNameOrUid_Switch: true,
     blockedNameOrUid_UseRegular: false,
@@ -611,6 +614,27 @@ let menuUiHTML = `
 
         <div class="menuOptions">
             <div class="titleLabelLeft">
+                <label title="标题白名单，命中关键字的视频将不会被屏蔽，优先级最高"><input type="checkbox"
+                        v-model="menuUiSettings.whitelistTitle_Switch" />按标题避免屏蔽视频(?)</label>
+            </div>
+
+            <div class="titleLabelRight">
+                <label title="正则是什么可以问AI，你也可以理解成模糊匹配"><input type="checkbox" v-model="menuUiSettings.whitelistTitle_UseRegular" />启用正则(?)</label>
+            </div>
+
+            <input type="text" placeholder='多项输入请用英文逗号间隔' spellcheck="false"
+                v-model="tempInputValue.whitelistTitle_Array" /><button
+                @click="addArrayButton(tempInputValue, menuUiSettings, 'whitelistTitle_Array' )">添加</button>
+
+            <ul>
+                <li v-for="(value, index) in menuUiSettings.whitelistTitle_Array">
+                    {{getDisplayText(value, index)}}<button @click="delArrayButton(index, menuUiSettings.whitelistTitle_Array)">×</button>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="menuOptions">
+            <div class="titleLabelLeft">
                 <label title="大部分情况也是可以在网页上直接拿到"><input type="checkbox" v-model="menuUiSettings.blockedNameOrUid_Switch" />按UP名称或Uid屏蔽视频(?)</label>
             </div>
 
@@ -971,6 +995,7 @@ function blockedMenuUi() {
             // 临时存储的各数组对应的输入值
             const tempInputValue = reactive({
                 blockedTitle_Array: "",
+                whitelistTitle_Array: "",
                 blockedNameOrUid_Array: "",
                 blockedVideoPartitions_Array: "",
                 blockedTag_Array: "",
@@ -2498,6 +2523,31 @@ function handleWhitelistTag(videoBv) {
     }
 }
 
+function handleWhitelistTitle(videoBv) {
+    // 判断是否拿到视频标题，以及白名单开关是否开启
+    if (!videoInfoDict[videoBv].videoTitle) {
+        return;
+    }
+
+    let isMatch = false;
+
+    // 是否启用正则匹配
+    if (blockedParameter.whitelistTitle_UseRegular) {
+        isMatch = blockedParameter.whitelistTitle_Array.some((whitelistTitleItem) => {
+            const regEx = new RegExp(whitelistTitleItem);
+            return regEx.test(videoInfoDict[videoBv].videoTitle);
+        });
+    } else {
+        isMatch = blockedParameter.whitelistTitle_Array.some((whitelistTitleItem) => {
+            return whitelistTitleItem === videoInfoDict[videoBv].videoTitle;
+        });
+    }
+
+    if (isMatch) {
+        videoInfoDict[videoBv].whiteListTargets = true;
+    }
+}
+
 // 判断当前网址是否符合
 function determineURL(urlRules, currentUrl) {
     // 检查是否匹配任意规则
@@ -3057,6 +3107,12 @@ function FuckYouBilibiliRecommendationSystem() {
             // 判断处理 白名单Tag
             handleWhitelistTag(videoBv);
         }
+
+        if (blockedParameter.whitelistTitle_Switch && blockedParameter.whitelistTag_Array.length > 0){
+            // 判断处理 白名单标题
+            handleWhitelistTitle(videoBv);
+        }
+
         // 屏蔽或者取消屏蔽
         blockedOrUnblocked(videoElement, videoBv);
 
