@@ -2499,8 +2499,8 @@ function handleWhitelistNameOrUid(videoBv) {
 }
 
 function handleWhitelistTag(videoBv) {
-    // 判断是否拿到视频标签，以及开关是否开启
-    if (!videoInfoDict[videoBv].videoTags || !blockedParameter.whitelistTag_Switch) {
+    // 判断是否拿到视频标签
+    if (!videoInfoDict[videoBv].videoTags) {
         return;
     }
 
