@@ -3108,7 +3108,8 @@ function FuckYouBilibiliRecommendationSystem() {
             handleWhitelistTag(videoBv);
         }
 
-        if (blockedParameter.whitelistTitle_Switch && blockedParameter.whitelistTag_Array.length > 0){
+        // 是否启用 白名单标题
+        if (blockedParameter.whitelistTitle_Switch && blockedParameter.whitelistTitle_Array.length > 0){
             // 判断处理 白名单标题
             handleWhitelistTitle(videoBv);
         }
