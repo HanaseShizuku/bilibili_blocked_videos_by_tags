@@ -111,7 +111,10 @@ let blockedParameter = GM_getValue("GM_blockedParameter", {
     blockedTag_Switch: true,
     blockedTag_UseRegular: true,
     blockedTag_Array: [],
-
+    // 白名单标签
+    whitelistTag_Switch: true,
+    whitelistTag_UseRegular: true,
+    whitelistTag_Array: [],
     // 屏蔽双重屏蔽标签
     doubleBlockedTag_Switch: true,
     doubleBlockedTag_UseRegular: true,
@@ -672,6 +675,26 @@ let menuUiHTML = `
             </ul>
         </div>
 
+        <div class="menuOptions">
+            <div class="titleLabelLeft">
+                <label title="白名单，标签匹配成功后将不会被屏蔽，优先级最高"><input type="checkbox"
+                        v-model="menuUiSettings.whitelistTag_Switch" />按标签避免屏蔽视频(?)</label>
+            </div>
+
+            <div class="titleLabelRight">
+                <label title="正则是什么可以问AI，你也可以理解成模糊匹配"><input type="checkbox" v-model="menuUiSettings.whitelistTag_UseRegular" />启用正则(?)</label>
+            </div>
+
+            <input type="text" placeholder='多项输入请用英文逗号间隔' spellcheck="false"
+                v-model="tempInputValue.whitelistTag_Array" /><button
+                @click="addArrayButton(tempInputValue, menuUiSettings, 'whitelistTag_Array' )">添加</button>
+
+            <ul>
+                <li v-for="(value, index) in menuUiSettings.whitelistTag_Array">
+                    {{getDisplayText(value, index)}}<button @click="delArrayButton(index, menuUiSettings.whitelistTag_Array)">×</button>
+                </li>
+            </ul>
+        </div>
 
         <div class="menuOptions">
             <label title="视频API，是拿到视频的充电视频标记后判断的"><input type="checkbox" v-model="menuUiSettings.blockedChargingExclusive_Switch" />屏蔽充电专属的视频(?)</label>
@@ -951,6 +974,7 @@ function blockedMenuUi() {
                 blockedNameOrUid_Array: "",
                 blockedVideoPartitions_Array: "",
                 blockedTag_Array: "",
+                whitelistTag_Array:"",
                 doubleBlockedTag_Array: "",
                 blockedTopComment_Array: "",
                 blockedUpSigns_Array: "",
@@ -2449,6 +2473,31 @@ function handleWhitelistNameOrUid(videoBv) {
     }
 }
 
+function handleWhitelistTag(videoBv) {
+    // 判断是否拿到视频标签，以及开关是否开启
+    if (!videoInfoDict[videoBv].videoTags || !blockedParameter.whitelistTag_Switch) {
+        return;
+    }
+
+    let isMatch = false;
+
+    // 是否启用正则匹配
+    if (blockedParameter.whitelistTag_UseRegular) {
+        isMatch = blockedParameter.whitelistTag_Array.some((whitelistTagItem) => {
+            const regEx = new RegExp(whitelistTagItem);
+            return videoInfoDict[videoBv].videoTags.some((videoTagItem) => regEx.test(videoTagItem));
+        });
+    } else {
+        isMatch = blockedParameter.whitelistTag_Array.some((whitelistTagItem) =>
+            videoInfoDict[videoBv].videoTags.includes(whitelistTagItem)
+        );
+    }
+
+    if (isMatch) {
+        videoInfoDict[videoBv].whiteListTargets = true;
+    }
+}
+
 // 判断当前网址是否符合
 function determineURL(urlRules, currentUrl) {
     // 检查是否匹配任意规则
@@ -3003,7 +3052,11 @@ function FuckYouBilibiliRecommendationSystem() {
             // 判断处理 白名单Up主和Uid
             handleWhitelistNameOrUid(videoBv);
         }
-
+        // 是否启用 白名单Tag
+        if (blockedParameter.whitelistTag_Switch && blockedParameter.whitelistTag_Array.length > 0){
+            // 判断处理 白名单Tag
+            handleWhitelistTag(videoBv);
+        }
         // 屏蔽或者取消屏蔽
         blockedOrUnblocked(videoElement, videoBv);
 
